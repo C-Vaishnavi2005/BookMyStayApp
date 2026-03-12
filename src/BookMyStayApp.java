@@ -1,48 +1,43 @@
-abstract class Room {
-    String type;
-    double price;
-    int availableRooms;
+import java.util.HashMap;
+import java.util.Map;
 
-    Room(String type, double price, int availableRooms) {
-        this.type = type;
-        this.price = price;
-        this.availableRooms = availableRooms;
+class RoomInventory {
+    private HashMap<String, Integer> inventory = new HashMap<>();
+
+    void registerRoom(String type, int count) {
+        inventory.put(type, count);
     }
 
-    void display() {
-        System.out.println("Room Type: " + type);
-        System.out.println("Price: " + price);
-        System.out.println("Available Rooms: " + availableRooms);
-        System.out.println();
+    int getAvailability(String type) {
+        return inventory.getOrDefault(type, 0);
     }
-}
 
-class StandardRoom extends Room {
-    StandardRoom(int availableRooms) {
-        super("Standard Room", 2000, availableRooms);
+    void updateAvailability(String type, int count) {
+        if (inventory.containsKey(type)) {
+            inventory.put(type, count);
+        }
     }
-}
 
-class DeluxeRoom extends Room {
-    DeluxeRoom(int availableRooms) {
-        super("Deluxe Room", 3500, availableRooms);
-    }
-}
-
-class SuiteRoom extends Room {
-    SuiteRoom(int availableRooms) {
-        super("Suite Room", 5000, availableRooms);
+    void displayInventory() {
+        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
+            System.out.println("Room Type: " + entry.getKey() + " | Available: " + entry.getValue());
+        }
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
-        Room r1 = new StandardRoom(10);
-        Room r2 = new DeluxeRoom(5);
-        Room r3 = new SuiteRoom(2);
+        RoomInventory inventory = new RoomInventory();
 
-        r1.display();
-        r2.display();
-        r3.display();
+        inventory.registerRoom("Standard Room", 10);
+        inventory.registerRoom("Deluxe Room", 5);
+        inventory.registerRoom("Suite Room", 2);
+
+        inventory.displayInventory();
+
+        inventory.updateAvailability("Standard Room", 8);
+
+        System.out.println();
+        inventory.displayInventory();
     }
 }
