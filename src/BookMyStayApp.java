@@ -1,63 +1,63 @@
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-class Reservation {
-    String reservationId;
-    String guestName;
-    String roomType;
-
-    Reservation(String reservationId, String guestName, String roomType) {
-        this.reservationId = reservationId;
-        this.guestName = guestName;
-        this.roomType = roomType;
-    }
-
-    void display() {
-        System.out.println("Reservation ID: " + reservationId);
-        System.out.println("Guest: " + guestName);
-        System.out.println("Room Type: " + roomType);
-        System.out.println();
+class InvalidBookingException extends Exception {
+    InvalidBookingException(String message) {
+        super(message);
     }
 }
 
-class BookingHistory {
-    private List<Reservation> history = new ArrayList<>();
+class RoomInventory {
+    private Map<String, Integer> inventory = new HashMap<>();
 
-    void addReservation(Reservation r) {
-        history.add(r);
+    void registerRoom(String type, int count) {
+        inventory.put(type, count);
     }
 
-    List<Reservation> getHistory() {
-        return history;
+    boolean roomExists(String type) {
+        return inventory.containsKey(type);
+    }
+
+    int getAvailability(String type) {
+        return inventory.getOrDefault(type, 0);
     }
 }
 
-class BookingReportService {
-    private BookingHistory history;
-
-    BookingReportService(BookingHistory history) {
-        this.history = history;
-    }
-
-    void displayAllBookings() {
-        for (Reservation r : history.getHistory()) {
-            r.display();
+class InvalidBookingValidator {
+    void validate(String guestName, String roomType, RoomInventory inventory) throws InvalidBookingException {
+        if (guestName == null || guestName.trim().isEmpty()) {
+            throw new InvalidBookingException("Guest name cannot be empty");
+        }
+        if (roomType == null || roomType.trim().isEmpty()) {
+            throw new InvalidBookingException("Room type cannot be empty");
+        }
+        if (!inventory.roomExists(roomType)) {
+            throw new InvalidBookingException("Invalid room type selected");
+        }
+        if (inventory.getAvailability(roomType) <= 0) {
+            throw new InvalidBookingException("Requested room type is not available");
         }
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
-        BookingHistory history = new BookingHistory();
+        RoomInventory inventory = new RoomInventory();
+        inventory.registerRoom("Standard Room", 2);
+        inventory.registerRoom("Deluxe Room", 0);
 
-        Reservation r1 = new Reservation("ROOM-1", "Arun", "Standard Room");
-        Reservation r2 = new Reservation("ROOM-2", "Priya", "Deluxe Room");
-        Reservation r3 = new Reservation("ROOM-3", "Rahul", "Suite Room");
+        InvalidBookingValidator validator = new InvalidBookingValidator();
 
-        history.addReservation(r1);
-        history.addReservation(r2);
-        history.addReservation(r3);
+        String guestName = "Arun";
+        String roomType = "Deluxe Room";
 
-        BookingReportService reportService = new BookingReportService(history);
-        reportService.displayAllBookings();
+        try {
+            validator.validate(guestName, roomType, inventory);
+            System.out.println("Booking input is valid");
+        } catch (InvalidBookingException e) {
+            System.out.println("Booking Failed: " + e.getMessage());
+        }
+
+        System.out.println("System continues running safely");
     }
 }
