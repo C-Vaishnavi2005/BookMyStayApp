@@ -1,9 +1,14 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-class InvalidBookingException extends Exception {
-    InvalidBookingException(String message) {
-        super(message);
+class Reservation {
+    String reservationId;
+    String guestName;
+    String roomType;
+
+    Reservation(String reservationId, String guestName, String roomType) {
+        this.reservationId = reservationId;
+        this.guestName = guestName;
+        this.roomType = roomType;
     }
 }
 
@@ -14,50 +19,77 @@ class RoomInventory {
         inventory.put(type, count);
     }
 
-    boolean roomExists(String type) {
-        return inventory.containsKey(type);
+    void increment(String type) {
+        inventory.put(type, inventory.getOrDefault(type, 0) + 1);
     }
 
-    int getAvailability(String type) {
-        return inventory.getOrDefault(type, 0);
+    void display() {
+        for (Map.Entry<String, Integer> e : inventory.entrySet()) {
+            System.out.println(e.getKey() + " Available: " + e.getValue());
+        }
     }
 }
 
-class InvalidBookingValidator {
-    void validate(String guestName, String roomType, RoomInventory inventory) throws InvalidBookingException {
-        if (guestName == null || guestName.trim().isEmpty()) {
-            throw new InvalidBookingException("Guest name cannot be empty");
+class BookingHistory {
+    private Map<String, Reservation> history = new HashMap<>();
+
+    void addReservation(Reservation r) {
+        history.put(r.reservationId, r);
+    }
+
+    Reservation getReservation(String id) {
+        return history.get(id);
+    }
+
+    void removeReservation(String id) {
+        history.remove(id);
+    }
+
+    void display() {
+        for (Reservation r : history.values()) {
+            System.out.println(r.reservationId + " " + r.guestName + " " + r.roomType);
         }
-        if (roomType == null || roomType.trim().isEmpty()) {
-            throw new InvalidBookingException("Room type cannot be empty");
+    }
+}
+
+class CancellationService {
+    private RoomInventory inventory;
+    private BookingHistory history;
+    private Stack<String> rollbackStack = new Stack<>();
+
+    CancellationService(RoomInventory inventory, BookingHistory history) {
+        this.inventory = inventory;
+        this.history = history;
+    }
+
+    void cancel(String reservationId) {
+        Reservation r = history.getReservation(reservationId);
+        if (r == null) {
+            System.out.println("Cancellation Failed: Reservation not found");
+            return;
         }
-        if (!inventory.roomExists(roomType)) {
-            throw new InvalidBookingException("Invalid room type selected");
-        }
-        if (inventory.getAvailability(roomType) <= 0) {
-            throw new InvalidBookingException("Requested room type is not available");
-        }
+        rollbackStack.push(r.reservationId);
+        inventory.increment(r.roomType);
+        history.removeReservation(reservationId);
+        System.out.println("Reservation Cancelled: " + reservationId);
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
         RoomInventory inventory = new RoomInventory();
-        inventory.registerRoom("Standard Room", 2);
+        inventory.registerRoom("Standard Room", 1);
         inventory.registerRoom("Deluxe Room", 0);
 
-        InvalidBookingValidator validator = new InvalidBookingValidator();
+        BookingHistory history = new BookingHistory();
+        Reservation r1 = new Reservation("ROOM-1", "Arun", "Standard Room");
+        history.addReservation(r1);
 
-        String guestName = "Arun";
-        String roomType = "Deluxe Room";
+        CancellationService service = new CancellationService(inventory, history);
 
-        try {
-            validator.validate(guestName, roomType, inventory);
-            System.out.println("Booking input is valid");
-        } catch (InvalidBookingException e) {
-            System.out.println("Booking Failed: " + e.getMessage());
-        }
+        service.cancel("ROOM-1");
 
-        System.out.println("System continues running safely");
+        inventory.display();
+        history.display();
     }
 }
